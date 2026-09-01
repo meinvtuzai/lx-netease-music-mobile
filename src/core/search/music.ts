@@ -61,7 +61,6 @@ export const search = async (
     })
   } else {
     if (listInfo?.key == key && listInfo?.list.length) return listInfo?.list
-    if (listInfo.key != key) clearListInfo(sourceId)
     listInfo.key = key
     const supplementPromise = sourceId == 'wy' && page == 1
       ? musicSdk.wy.musicSearch.searchBySerpApi(text)

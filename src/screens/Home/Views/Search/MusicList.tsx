@@ -19,6 +19,7 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
   const isUnmountedRef = useRef(false)
   const requestIdRef = useRef(0)
   const loadingQueryKeyRef = useRef<string | null>(null)
+  const loadingMoreRequestIdRef = useRef<number | null>(null)
 
   const isCurrentRequest = (requestId: number) => {
     return !isUnmountedRef.current && requestId == requestIdRef.current
@@ -56,6 +57,7 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
       async loadList(text, source) {
         const queryKey = `${source}__${text}`
         if (loadingQueryKeyRef.current == queryKey) return
+        loadingMoreRequestIdRef.current = null
         loadingQueryKeyRef.current = queryKey
         const requestId = ++requestIdRef.current
         searchInfoRef.current.text = text
@@ -104,10 +106,12 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
       isUnmountedRef.current = true
       requestIdRef.current++
       loadingQueryKeyRef.current = null
+      loadingMoreRequestIdRef.current = null
     }
   }, [])
 
   const handleRefresh: OnlineListProps['onRefresh'] = () => {
+    loadingMoreRequestIdRef.current = null
     const requestId = ++requestIdRef.current
     const page = 1
     const { text, source } = searchInfoRef.current
@@ -135,7 +139,9 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
       })
   }
   const handleLoadMore: OnlineListProps['onLoadMore'] = () => {
+    if (loadingMoreRequestIdRef.current != null) return
     const requestId = ++requestIdRef.current
+    loadingMoreRequestIdRef.current = requestId
     listRef.current?.setStatus('loading')
     const info = searchMusicState.listInfos[searchInfoRef.current.source]!
     const page = info?.list.length ? info.page + 1 : 1
@@ -149,6 +155,11 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
       .catch(() => {
         if (!isCurrentRequest(requestId)) return
         listRef.current?.setStatus('error')
+      })
+      .finally(() => {
+        if (loadingMoreRequestIdRef.current == requestId) {
+          loadingMoreRequestIdRef.current = null
+        }
       })
   }
 
